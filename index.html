@@ -133,7 +133,7 @@
       width: 100%;
       height: auto;
       display: block;
-      transform: scaleX(-1); /* Perfect mirror */
+      transform: scaleX(-1); /* Real-time Mirroring */
     }
 
     .loading {
@@ -185,24 +185,27 @@
   </div>
 
   <script>
-    // Pure vector SVG (Mirrored internally so text looks correct in mirror webcam)
+    // Realistic Vector T-Shirt Generation (Mirror-corrected Text)
     const createShirtSVG = (color, text) => {
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
-        <path d="M 175 60 Q 250 110 325 60 L 460 120 L 400 210 L 355 175 L 360 480 L 140 480 L 145 175 L 100 210 L 40 120 Z" 
-              fill="${color}" stroke="#ffffff" stroke-width="6" stroke-linejoin="round"/>
-        <path d="M 175 60 Q 250 110 325 60 Q 250 85 175 60 Z" fill="#000000" opacity="0.3"/>
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 520" width="500" height="520">
+        <!-- Natural Collar, Sleeves and Torso -->
+        <path d="M 180 40 Q 250 85 320 40 L 465 105 L 415 200 L 360 160 L 365 480 L 135 480 L 140 160 L 85 200 L 35 105 Z" 
+              fill="${color}" stroke="#ffffff" stroke-width="4" stroke-linejoin="round"/>
+        <!-- Collar shadow / rim -->
+        <path d="M 180 40 Q 250 85 320 40 Q 250 65 180 40 Z" fill="#000000" opacity="0.35"/>
+        <!-- Text mirrored in SVG so it renders clearly in webcam mirror view -->
         <g transform="translate(250, 0) scale(-1, 1) translate(-250, 0)">
-          <text x="250" y="240" font-size="28" font-family="Arial, sans-serif" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="2">${text}</text>
-          <text x="250" y="270" font-size="13" font-family="Arial, sans-serif" font-weight="bold" fill="#ffffff" opacity="0.85" text-anchor="middle">BY UDARA</text>
+          <text x="250" y="220" font-size="28" font-family="Arial, sans-serif" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="2">${text}</text>
+          <text x="250" y="250" font-size="12" font-family="Arial, sans-serif" font-weight="bold" fill="#ffffff" opacity="0.85" text-anchor="middle">DESIGNED BY UDARA</text>
         </g>
       </svg>`;
       return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
     };
 
     const tshirts = [
-      { id: 1, name: 'Sport Red', src: createShirtSVG('#e11d48', 'ACTIVE') },
+      { id: 1, name: 'Ocean Blue', src: createShirtSVG('#3b82f6', 'CASUAL') },
       { id: 2, name: 'Classic Black', src: createShirtSVG('#0f172a', 'ORIGINAL') },
-      { id: 3, name: 'Ocean Blue', src: createShirtSVG('#0284c7', 'CASUAL') },
+      { id: 3, name: 'Sport Red', src: createShirtSVG('#e11d48', 'ACTIVE') },
       { id: 4, name: 'Emerald Green', src: createShirtSVG('#059669', 'SUMMER') }
     ];
 
@@ -253,7 +256,7 @@
       canvasCtx.save();
       canvasCtx.clearRect(0, 0, w, h);
       
-      // Render raw video stream
+      // Draw webcam feed
       canvasCtx.drawImage(results.image, 0, 0, w, h);
 
       if (results.poseLandmarks) {
@@ -266,16 +269,19 @@
           const pLeft = { x: leftShoulder.x * w, y: leftShoulder.y * h };
           const pRight = { x: rightShoulder.x * w, y: rightShoulder.y * h };
 
-          // Midpoint between shoulders
+          // In standard webcam mirror view:
+          // Left Shoulder (11) is on the right (higher X), Right Shoulder (12) is on the left (lower X)
+          const dx = pLeft.x - pRight.x;
+          const dy = pLeft.y - pRight.y;
+          
+          // Accurate 0-degree level angle
+          const angle = Math.atan2(dy, dx);
+          const shoulderDistance = Math.hypot(dx, dy);
+
           const midX = (pLeft.x + pRight.x) / 2;
           const midY = (pLeft.y + pRight.y) / 2;
 
-          const shoulderDistance = Math.hypot(pRight.x - pLeft.x, pRight.y - pLeft.y);
-          
-          // Fixed angle vector for mirror transformation
-          const angle = Math.atan2(pLeft.y - pRight.y, pLeft.x - pRight.x);
-
-          // Natural fitting proportions
+          // Proportional Auto-Fit
           const shirtWidth = shoulderDistance * 2.0;
           let shirtHeight = shirtWidth * 1.05;
 
@@ -286,10 +292,9 @@
 
           canvasCtx.save();
           canvasCtx.translate(midX, midY);
-          // Angle rotated by PI (180 deg) to flip it permanently upright
-          canvasCtx.rotate(angle + Math.PI);
+          canvasCtx.rotate(angle);
           
-          // Draw shirt starting from neck downwards onto torso
+          // Draw T-Shirt starting right from the collar down across the chest
           canvasCtx.drawImage(
             clothingImg, 
             -shirtWidth / 2, 
