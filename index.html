@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Virtual Try-On - By Udara Dissanayake</title>
   
-  <!-- MediaPipe Pose & Camera CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
 
@@ -43,7 +42,6 @@
     .header h1 {
       font-size: 1.8rem;
       color: #38bdf8;
-      letter-spacing: 0.5px;
     }
 
     .designer-tag {
@@ -135,7 +133,7 @@
       width: 100%;
       height: auto;
       display: block;
-      transform: scaleX(-1); /* Mirror view */
+      transform: scaleX(-1);
     }
 
     .loading {
@@ -187,19 +185,21 @@
   </div>
 
   <script>
-    // Built-in Vector T-Shirts (Zero external image dependencies)
+    // Precision SVG Vector T-Shirt (Proper Collar Top & Torso Bottom)
     const createShirtSVG = (color, text) => {
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
-        <path d="M 170 80 Q 250 140 330 80 L 460 170 L 390 270 L 350 220 L 350 450 L 150 450 L 150 220 L 110 270 L 40 170 Z" fill="${color}" stroke="#ffffff" stroke-width="6"/>
-        <text x="250" y="270" font-size="28" font-family="Arial" font-weight="bold" fill="#ffffff" text-anchor="middle">${text}</text>
-        <text x="250" y="305" font-size="16" font-family="Arial" fill="#ffffff" opacity="0.8" text-anchor="middle">BY UDARA</text>
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 550">
+        <path d="M 160 50 Q 250 110 340 50 L 480 130 L 410 230 L 360 190 L 365 520 L 135 520 L 140 190 L 90 230 L 20 130 Z" 
+              fill="${color}" stroke="#ffffff" stroke-width="6" stroke-linejoin="round"/>
+        <path d="M 160 50 Q 250 110 340 50 Q 250 80 160 50 Z" fill="#000000" opacity="0.25"/>
+        <text x="250" y="270" font-size="30" font-family="Arial" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="2">${text}</text>
+        <text x="250" y="305" font-size="14" font-family="Arial" font-weight="bold" fill="#ffffff" opacity="0.85" text-anchor="middle">DESIGNED BY UDARA</text>
       </svg>`;
       return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
     };
 
     const tshirts = [
-      { id: 1, name: 'Sport Red', src: createShirtSVG('#dc2626', 'ACTIVE') },
-      { id: 2, name: 'Classic Black', src: createShirtSVG('#1e293b', 'ORIGINAL') },
+      { id: 1, name: 'Classic Black', src: createShirtSVG('#0f172a', 'ORIGINAL') },
+      { id: 2, name: 'Sport Red', src: createShirtSVG('#e11d48', 'ATHLETIC') },
       { id: 3, name: 'Ocean Blue', src: createShirtSVG('#0284c7', 'CASUAL') },
       { id: 4, name: 'Emerald Green', src: createShirtSVG('#059669', 'SUMMER') }
     ];
@@ -214,7 +214,6 @@
     let clothingImg = new Image();
     clothingImg.src = tshirts[0].src;
 
-    // Render wardrobe items
     tshirts.forEach((item, index) => {
       const card = document.createElement('div');
       card.className = `clothing-card ${index === 0 ? 'active' : ''}`;
@@ -262,11 +261,12 @@
           const pRight = { x: rightShoulder.x * canvasElement.width, y: rightShoulder.y * canvasElement.height };
 
           const shoulderDistance = Math.hypot(pRight.x - pLeft.x, pRight.y - pLeft.y);
+          // Angle calculation matched to mirrored canvas
           const angle = Math.atan2(pRight.y - pLeft.y, pRight.x - pLeft.x);
 
-          // Scaling & positioning
+          // Proportions tailored to chest & shoulders
           const shirtWidth = shoulderDistance * 2.3;
-          const shirtHeight = shirtWidth * 1.05;
+          const shirtHeight = shirtWidth * 1.15;
 
           const midX = (pLeft.x + pRight.x) / 2;
           const midY = (pLeft.y + pRight.y) / 2;
@@ -275,10 +275,11 @@
           canvasCtx.translate(midX, midY);
           canvasCtx.rotate(angle);
           
+          // Center the neckline directly over shoulders
           canvasCtx.drawImage(
             clothingImg, 
             -shirtWidth / 2, 
-            -shirtHeight * 0.18, 
+            -shirtHeight * 0.12, 
             shirtWidth, 
             shirtHeight
           );
