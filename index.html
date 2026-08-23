@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Virtual Try-On - By Udara Dissanayake</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- MediaPipe Pose & Camera Utils -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>AI Virtual Try-On</h1>
+      <p class="designer-tag">Exclusive Collection Designed by <span>Udara Dissanayake</span></p>
+    </header>
+    
+    <!-- Clothing Selector / Wardrobe -->
+    <div class="wardrobe-panel">
+      <h3>Select T-Shirt Style:</h3>
+      <div class="clothing-grid" id="clothingGrid">
+        <!-- Preset options will be loaded by JS -->
+      </div>
+
+      <div class="custom-upload">
+        <label for="clothingUpload">📁 Or Upload Custom PNG:</label>
+        <input type="file" id="clothingUpload" accept="image/png, image/webp">
+      </div>
+    </div>
+
+    <!-- Webcam & AR Fitting Display -->
+    <div class="canvas-wrapper">
+      <video id="webcam" playsinline style="display: none;"></video>
+      <canvas id="outputCanvas"></canvas>
+      <div id="loadingMessage" class="loading">Loading AI Model & Camera...</div>
+    </div>
+
+    <footer class="footer">
+      <p>&copy; Designed & Developed by Udara Dissanayake</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
