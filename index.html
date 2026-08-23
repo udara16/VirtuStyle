@@ -187,23 +187,19 @@
     // Precision Form-Fitting T-Shirt SVG
     const createShirtSVG = (color, text) => {
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
-        <!-- Natural T-Shirt Silhouette -->
+        <!-- Natural T-Shirt Body Outline -->
         <path d="M 180 50 Q 250 95 320 50 L 450 115 L 395 200 L 350 165 L 355 460 L 145 460 L 150 165 L 105 200 L 50 115 Z" 
               fill="${color}" stroke="#ffffff" stroke-width="5" stroke-linejoin="round"/>
         <path d="M 180 50 Q 250 95 320 50 Q 250 75 180 50 Z" fill="#000000" opacity="0.3"/>
-        
-        <!-- Text mirrored in SVG so it displays normal after canvas mirror -->
-        <g transform="translate(250, 0) scale(-1, 1) translate(-250, 0)">
-          <text x="250" y="240" font-size="28" font-family="Arial, sans-serif" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="2">${text}</text>
-          <text x="250" y="270" font-size="13" font-family="Arial, sans-serif" font-weight="bold" fill="#ffffff" opacity="0.85" text-anchor="middle">BY UDARA</text>
-        </g>
+        <text x="250" y="240" font-size="28" font-family="Arial, sans-serif" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="2">${text}</text>
+        <text x="250" y="270" font-size="13" font-family="Arial, sans-serif" font-weight="bold" fill="#ffffff" opacity="0.85" text-anchor="middle">BY UDARA</text>
       </svg>`;
       return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
     };
 
     const tshirts = [
-      { id: 1, name: 'Classic Black', src: createShirtSVG('#0f172a', 'ORIGINAL') },
-      { id: 2, name: 'Sport Red', src: createShirtSVG('#e11d48', 'ATHLETIC') },
+      { id: 1, name: 'Sport Red', src: createShirtSVG('#e11d48', 'ACTIVE') },
+      { id: 2, name: 'Classic Black', src: createShirtSVG('#0f172a', 'ORIGINAL') },
       { id: 3, name: 'Ocean Blue', src: createShirtSVG('#0284c7', 'CASUAL') },
       { id: 4, name: 'Emerald Green', src: createShirtSVG('#059669', 'SUMMER') }
     ];
@@ -255,7 +251,7 @@
       canvasCtx.save();
       canvasCtx.clearRect(0, 0, w, h);
       
-      // Mirror video feed
+      // Mirror Canvas
       canvasCtx.translate(w, 0);
       canvasCtx.scale(-1, 1);
       canvasCtx.drawImage(results.image, 0, 0, w, h);
@@ -263,31 +259,42 @@
       if (results.poseLandmarks) {
         const leftShoulder = results.poseLandmarks[11];
         const rightShoulder = results.poseLandmarks[12];
+        const leftHip = results.poseLandmarks[23];
+        const rightHip = results.poseLandmarks[24];
 
         if (leftShoulder && rightShoulder && leftShoulder.visibility > 0.2 && rightShoulder.visibility > 0.2) {
           const pLeft = { x: leftShoulder.x * w, y: leftShoulder.y * h };
           const pRight = { x: rightShoulder.x * w, y: rightShoulder.y * h };
 
-          // Midpoint of shoulders
+          // Center of the shoulders
           const midX = (pLeft.x + pRight.x) / 2;
           const midY = (pLeft.y + pRight.y) / 2;
 
           const shoulderDistance = Math.hypot(pRight.x - pLeft.x, pRight.y - pLeft.y);
-          const angle = Math.atan2(pRight.y - pLeft.y, pRight.x - pLeft.x);
+          
+          // Fixed angle for upright fitting on mirrored canvas
+          const angle = Math.atan2(pLeft.y - pRight.y, pLeft.x - pRight.x);
 
-          // Natural shoulder proportion
-          const shirtWidth = shoulderDistance * 1.85;
-          const shirtHeight = shirtWidth * 1.0;
+          // Dynamic Body Auto-Fit
+          const shirtWidth = shoulderDistance * 2.0;
+          
+          // Calculate height from shoulders to hips if hips are visible, else use standard ratio
+          let shirtHeight = shirtWidth * 1.0;
+          if (leftHip && rightHip && leftHip.visibility > 0.2 && rightHip.visibility > 0.2) {
+            const hipMidY = ((leftHip.y + rightHip.y) / 2) * h;
+            const torsoHeight = Math.abs(hipMidY - midY);
+            shirtHeight = torsoHeight * 1.35;
+          }
 
           canvasCtx.save();
           canvasCtx.translate(midX, midY);
           canvasCtx.rotate(angle);
           
-          // Collar sits right on the neck base
+          // Draw shirt starting from collar down through torso
           canvasCtx.drawImage(
             clothingImg, 
             -shirtWidth / 2, 
-            -shirtHeight * 0.18, 
+            -shirtHeight * 0.12, 
             shirtWidth, 
             shirtHeight
           );
