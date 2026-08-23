@@ -185,9 +185,10 @@
   </div>
 
   <script>
-    // Precision Realistic T-Shirt SVG
+    // Precision SVG Format
     const createShirtSVG = (color, text) => {
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 550" width="500" height="550">
+        <!-- Neck, Collar and Body Outline -->
         <path d="M 160 60 Q 250 120 340 60 L 480 140 L 410 240 L 360 200 L 365 530 L 135 530 L 140 200 L 90 240 L 20 140 Z" 
               fill="${color}" stroke="#ffffff" stroke-width="6" stroke-linejoin="round"/>
         <path d="M 160 60 Q 250 120 340 60 Q 250 90 160 60 Z" fill="#000000" opacity="0.3"/>
@@ -198,10 +199,10 @@
     };
 
     const tshirts = [
-      { id: 1, name: 'Emerald Green', src: createShirtSVG('#059669', 'SUMMER') },
+      { id: 1, name: 'Sport Red', src: createShirtSVG('#e11d48', 'ATHLETIC') },
       { id: 2, name: 'Classic Black', src: createShirtSVG('#0f172a', 'ORIGINAL') },
-      { id: 3, name: 'Sport Red', src: createShirtSVG('#e11d48', 'ATHLETIC') },
-      { id: 4, name: 'Ocean Blue', src: createShirtSVG('#0284c7', 'CASUAL') }
+      { id: 3, name: 'Ocean Blue', src: createShirtSVG('#0284c7', 'CASUAL') },
+      { id: 4, name: 'Emerald Green', src: createShirtSVG('#059669', 'SUMMER') }
     ];
 
     const videoElement = document.getElementById('webcam');
@@ -249,10 +250,10 @@
       canvasCtx.save();
       canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
       
-      // 1. Draw camera feed
+      // 1. Draw webcam feed
       canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
-      // 2. Pose estimation & Fitting
+      // 2. Pose estimation & Inverted Rotation Alignment
       if (results.poseLandmarks) {
         const leftShoulder = results.poseLandmarks[11];
         const rightShoulder = results.poseLandmarks[12];
@@ -262,21 +263,21 @@
           const pRight = { x: rightShoulder.x * canvasElement.width, y: rightShoulder.y * canvasElement.height };
 
           const shoulderDistance = Math.hypot(pRight.x - pLeft.x, pRight.y - pLeft.y);
-          // Angle calculated correctly for mirrored viewport
-          const angle = Math.atan2(pRight.y - pLeft.y, pRight.x - pLeft.x);
+          
+          // Flipped calculation to orient the shirt upright with canvas mirroring
+          const angle = Math.atan2(pLeft.y - pRight.y, pLeft.x - pRight.x);
 
-          const shirtWidth = shoulderDistance * 2.3;
-          const shirtHeight = shirtWidth * 1.15;
+          const shirtWidth = shoulderDistance * 2.1;
+          const shirtHeight = shirtWidth * 1.1;
 
           const midX = (pLeft.x + pRight.x) / 2;
           const midY = (pLeft.y + pRight.y) / 2;
 
           canvasCtx.save();
-          // Translate to center point between shoulders
           canvasCtx.translate(midX, midY);
           canvasCtx.rotate(angle);
           
-          // Draw shirt downwards from shoulder line
+          // Draw shirt downwards directly onto the torso
           canvasCtx.drawImage(
             clothingImg, 
             -shirtWidth / 2, 
