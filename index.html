@@ -133,7 +133,6 @@
       width: 100%;
       height: auto;
       display: block;
-      transform: scaleX(-1);
     }
 
     .loading {
@@ -188,10 +187,9 @@
     // Precision SVG Format
     const createShirtSVG = (color, text) => {
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 550" width="500" height="550">
-        <!-- Neck, Collar and Body Outline -->
-        <path d="M 160 60 Q 250 120 340 60 L 480 140 L 410 240 L 360 200 L 365 530 L 135 530 L 140 200 L 90 240 L 20 140 Z" 
+        <path d="M 160 50 Q 250 110 340 50 L 480 130 L 410 230 L 360 190 L 365 530 L 135 530 L 140 190 L 90 230 L 20 130 Z" 
               fill="${color}" stroke="#ffffff" stroke-width="6" stroke-linejoin="round"/>
-        <path d="M 160 60 Q 250 120 340 60 Q 250 90 160 60 Z" fill="#000000" opacity="0.3"/>
+        <path d="M 160 50 Q 250 110 340 50 Q 250 80 160 50 Z" fill="#000000" opacity="0.25"/>
         <text x="250" y="270" font-size="32" font-family="Arial, sans-serif" font-weight="bold" fill="#ffffff" text-anchor="middle" letter-spacing="2">${text}</text>
         <text x="250" y="305" font-size="14" font-family="Arial, sans-serif" font-weight="bold" fill="#ffffff" opacity="0.85" text-anchor="middle">BY UDARA</text>
       </svg>`;
@@ -199,7 +197,7 @@
     };
 
     const tshirts = [
-      { id: 1, name: 'Sport Red', src: createShirtSVG('#e11d48', 'ATHLETIC') },
+      { id: 1, name: 'Sport Red', src: createShirtSVG('#e11d48', 'ACTIVE') },
       { id: 2, name: 'Classic Black', src: createShirtSVG('#0f172a', 'ORIGINAL') },
       { id: 3, name: 'Ocean Blue', src: createShirtSVG('#0284c7', 'CASUAL') },
       { id: 4, name: 'Emerald Green', src: createShirtSVG('#059669', 'SUMMER') }
@@ -244,44 +242,57 @@
     function onResults(results) {
       if (loadingMessage) loadingMessage.style.display = 'none';
 
-      canvasElement.width = videoElement.videoWidth || 640;
-      canvasElement.height = videoElement.videoHeight || 480;
+      const w = videoElement.videoWidth || 640;
+      const h = videoElement.videoHeight || 480;
+      canvasElement.width = w;
+      canvasElement.height = h;
 
       canvasCtx.save();
-      canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+      canvasCtx.clearRect(0, 0, w, h);
       
-      // 1. Draw webcam feed
-      canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+      // Native Canvas Flip (Mirroring)
+      canvasCtx.translate(w, 0);
+      canvasCtx.scale(-1, 1);
+      canvasCtx.drawImage(results.image, 0, 0, w, h);
 
-      // 2. Pose estimation & Inverted Rotation Alignment
       if (results.poseLandmarks) {
+        // MediaPipe Landmarks: 0 = Nose, 11 = Left Shoulder, 12 = Right Shoulder
+        const nose = results.poseLandmarks[0];
         const leftShoulder = results.poseLandmarks[11];
         const rightShoulder = results.poseLandmarks[12];
 
-        if (leftShoulder && rightShoulder) {
-          const pLeft = { x: leftShoulder.x * canvasElement.width, y: leftShoulder.y * canvasElement.height };
-          const pRight = { x: rightShoulder.x * canvasElement.width, y: rightShoulder.y * canvasElement.height };
+        if (leftShoulder && rightShoulder && leftShoulder.visibility > 0.2 && rightShoulder.visibility > 0.2) {
+          const pLeft = { x: leftShoulder.x * w, y: leftShoulder.y * h };
+          const pRight = { x: rightShoulder.x * w, y: rightShoulder.y * h };
 
-          const shoulderDistance = Math.hypot(pRight.x - pLeft.x, pRight.y - pLeft.y);
-          
-          // Flipped calculation to orient the shirt upright with canvas mirroring
-          const angle = Math.atan2(pLeft.y - pRight.y, pLeft.x - pRight.x);
-
-          const shirtWidth = shoulderDistance * 2.1;
-          const shirtHeight = shirtWidth * 1.1;
-
+          // Center of the shoulder line
           const midX = (pLeft.x + pRight.x) / 2;
           const midY = (pLeft.y + pRight.y) / 2;
+
+          const shoulderDistance = Math.hypot(pRight.x - pLeft.x, pRight.y - pLeft.y);
+          let angle = Math.atan2(pRight.y - pLeft.y, pRight.x - pLeft.x);
+
+          // Use Face/Nose position to anchor T-shirt direction downwards
+          if (nose) {
+            const noseY = nose.y * h;
+            // Nose must always be above the shoulders in upright position
+            if (noseY > midY) {
+              angle += Math.PI;
+            }
+          }
+
+          const shirtWidth = shoulderDistance * 2.2;
+          const shirtHeight = shirtWidth * 1.15;
 
           canvasCtx.save();
           canvasCtx.translate(midX, midY);
           canvasCtx.rotate(angle);
           
-          // Draw shirt downwards directly onto the torso
+          // Draw shirt starting from neck downwards
           canvasCtx.drawImage(
             clothingImg, 
             -shirtWidth / 2, 
-            -shirtHeight * 0.12, 
+            -shirtHeight * 0.1, 
             shirtWidth, 
             shirtHeight
           );
@@ -298,8 +309,8 @@
     pose.setOptions({
       modelComplexity: 0,
       smoothLandmarks: true,
-      minDetectionConfidence: 0.25,
-      minTrackingConfidence: 0.25
+      minDetectionConfidence: 0.2,
+      minTrackingConfidence: 0.2
     });
 
     pose.onResults(onResults);
