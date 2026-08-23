@@ -5,40 +5,36 @@ const clothingUpload = document.getElementById('clothingUpload');
 const clothingGrid = document.getElementById('clothingGrid');
 const loadingMessage = document.getElementById('loadingMessage');
 
-// T-Shirt Styles / Collection by Udara Dissanayake
+// Working Transparent PNG T-Shirts
 const tshirts = [
   {
     id: 1,
     name: 'Classic Black',
-    src: 'https://raw.githubusercontent.com/udissanayake/assets/main/tshirt-black.png' // ඔබට කැමති Transparent PNG link එකක් යෙදිය හැක
+    src: 'https://raw.githubusercontent.com/mdeggies/AR-Virtual-Fitting-Room/master/images/shirt1.png'
   },
   {
     id: 2,
-    name: 'Pure White',
-    src: 'https://raw.githubusercontent.com/udissanayake/assets/main/tshirt-white.png'
+    name: 'Sport Red',
+    src: 'https://raw.githubusercontent.com/mdeggies/AR-Virtual-Fitting-Room/master/images/shirt2.png'
   },
   {
     id: 3,
-    name: 'Sport Red',
-    src: 'https://raw.githubusercontent.com/udissanayake/assets/main/tshirt-red.png'
-  },
-  {
-    id: 4,
-    name: 'Navy Blue Polo',
-    src: 'https://raw.githubusercontent.com/udissanayake/assets/main/tshirt-navy.png'
+    name: 'Pure White',
+    src: 'https://raw.githubusercontent.com/mdeggies/AR-Virtual-Fitting-Room/master/images/shirt3.png'
   }
 ];
 
 let clothingImg = new Image();
-// Fallback placeholder transparent image
+clothingImg.crossOrigin = "anonymous";
 clothingImg.src = tshirts[0].src;
 
-// Build Wardrobe UI Cards
+// Build Wardrobe UI
+clothingGrid.innerHTML = '';
 tshirts.forEach((item, index) => {
   const card = document.createElement('div');
   card.className = `clothing-card ${index === 0 ? 'active' : ''}`;
   card.innerHTML = `
-    <img src="${item.src}" alt="${item.name}" onerror="this.src='https://placehold.co/100x70/1e293b/ffffff?text=${encodeURIComponent(item.name)}'">
+    <img src="${item.src}" alt="${item.name}">
     <span>${item.name}</span>
   `;
 
@@ -51,7 +47,7 @@ tshirts.forEach((item, index) => {
   clothingGrid.appendChild(card);
 });
 
-// Custom Upload listener
+// Custom Upload Handler
 clothingUpload.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (file) {
@@ -75,25 +71,27 @@ function onResults(results) {
   canvasCtx.save();
   canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
   
-  // 1. Draw webcam feed
+  // Draw Webcam Video Stream
   canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
-  // 2. Pose calculation and T-Shirt fitting
+  // Pose Estimation & Clothing Overlay
   if (results.poseLandmarks) {
+    // 11 = Left Shoulder, 12 = Right Shoulder
     const leftShoulder = results.poseLandmarks[11];
     const rightShoulder = results.poseLandmarks[12];
 
-    if (leftShoulder && rightShoulder && leftShoulder.visibility > 0.5 && rightShoulder.visibility > 0.5) {
+    if (leftShoulder && rightShoulder && leftShoulder.visibility > 0.3 && rightShoulder.visibility > 0.3) {
       const pLeft = { x: leftShoulder.x * canvasElement.width, y: leftShoulder.y * canvasElement.height };
       const pRight = { x: rightShoulder.x * canvasElement.width, y: rightShoulder.y * canvasElement.height };
 
+      // Distance and Angle
       const shoulderDistance = Math.hypot(pRight.x - pLeft.x, pRight.y - pLeft.y);
       const angle = Math.atan2(pRight.y - pLeft.y, pRight.x - pLeft.x);
 
-      // Sizing calculation based on shoulder width
-      const shirtWidth = shoulderDistance * 2.25;
-      const aspectRatio = (clothingImg.naturalHeight || 1.2) / (clothingImg.naturalWidth || 1);
-      const shirtHeight = shirtWidth * aspectRatio;
+      // Fit calculations
+      const shirtWidth = shoulderDistance * 2.2;
+      const aspectRatio = (clothingImg.naturalHeight || 1) / (clothingImg.naturalWidth || 1);
+      const shirtHeight = shirtWidth * (aspectRatio > 0 ? aspectRatio : 1.25);
 
       const midX = (pLeft.x + pRight.x) / 2;
       const midY = (pLeft.y + pRight.y) / 2;
@@ -102,7 +100,6 @@ function onResults(results) {
       canvasCtx.translate(midX, midY);
       canvasCtx.rotate(angle);
       
-      // Draw clothing overlay
       if (clothingImg.complete && clothingImg.naturalWidth > 0) {
         canvasCtx.drawImage(
           clothingImg, 
@@ -123,11 +120,11 @@ const pose = new Pose({
 });
 
 pose.setOptions({
-  modelComplexity: 1,
+  modelComplexity: 0, // Faster tracking and better responsiveness on laptops
   smoothLandmarks: true,
   enableSegmentation: false,
-  minDetectionConfidence: 0.6,
-  minTrackingConfidence: 0.6
+  minDetectionConfidence: 0.3, // Lowered threshold for dark / shadow environments
+  minTrackingConfidence: 0.3
 });
 
 pose.onResults(onResults);
