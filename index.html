@@ -185,10 +185,9 @@
   </div>
 
   <script>
-    // Precision Form-Fitting T-Shirt SVG
+    // Precision Vector SVG Cutouts
     const createShirtSVG = (color, text) => {
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 520" width="500" height="520">
-        <!-- Natural Collar, Sleeves and Torso -->
         <path d="M 180 40 Q 250 85 320 40 L 465 105 L 415 200 L 360 160 L 365 480 L 135 480 L 140 160 L 85 200 L 35 105 Z" 
               fill="${color}" stroke="#ffffff" stroke-width="4" stroke-linejoin="round"/>
         <path d="M 180 40 Q 250 85 320 40 Q 250 65 180 40 Z" fill="#000000" opacity="0.35"/>
@@ -254,10 +253,11 @@
       canvasCtx.save();
       canvasCtx.clearRect(0, 0, w, h);
       
-      // Draw webcam feed
+      // Draw camera stream
       canvasCtx.drawImage(results.image, 0, 0, w, h);
 
       if (results.poseLandmarks) {
+        const nose = results.poseLandmarks[0];
         const leftShoulder = results.poseLandmarks[11];
         const rightShoulder = results.poseLandmarks[12];
         const leftHip = results.poseLandmarks[23];
@@ -267,19 +267,26 @@
           const pLeft = { x: leftShoulder.x * w, y: leftShoulder.y * h };
           const pRight = { x: rightShoulder.x * w, y: rightShoulder.y * h };
 
-          // In standard MediaPipe coordinates:
-          // Right Shoulder (12) is on the user's right side, Left Shoulder (11) is on user's left side
-          const dx = pRight.x - pLeft.x;
-          const dy = pRight.y - pLeft.y;
-          
-          // True horizontal slope angle
-          const angle = Math.atan2(dy, dx);
-          const shoulderDistance = Math.hypot(dx, dy);
-
+          // Shoulder center
           const midX = (pLeft.x + pRight.x) / 2;
           const midY = (pLeft.y + pRight.y) / 2;
 
-          // Proportional sizing
+          const shoulderDistance = Math.hypot(pRight.x - pLeft.x, pRight.y - pLeft.y);
+
+          // Face relative vector: Vector from nose down to shoulder midpoint
+          let downVectorAngle = 0;
+          if (nose) {
+            const noseX = nose.x * w;
+            const noseY = nose.y * h;
+            // Angle from Nose -> Midpoint of Shoulders (Always points down through the body)
+            const angleDown = Math.atan2(midY - noseY, midX - noseX);
+            // Convert to canvas horizontal rotation (angleDown - 90 deg)
+            downVectorAngle = angleDown - (Math.PI / 2);
+          } else {
+            downVectorAngle = Math.atan2(pRight.y - pLeft.y, pRight.x - pLeft.x);
+          }
+
+          // Proportion sizing
           const shirtWidth = shoulderDistance * 2.0;
           let shirtHeight = shirtWidth * 1.08;
 
@@ -289,14 +296,15 @@
           }
 
           canvasCtx.save();
+          // Anchor directly to the neck collar base
           canvasCtx.translate(midX, midY);
-          canvasCtx.rotate(angle);
+          canvasCtx.rotate(downVectorAngle);
           
-          // Draw shirt starting from neck collar down across torso
+          // Draw shirt downwards directly onto torso
           canvasCtx.drawImage(
             clothingImg, 
             -shirtWidth / 2, 
-            -shirtHeight * 0.12, 
+            -shirtHeight * 0.1, 
             shirtWidth, 
             shirtHeight
           );
