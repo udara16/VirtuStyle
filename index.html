@@ -133,6 +133,7 @@
       width: 100%;
       height: auto;
       display: block;
+      transform: scaleX(-1); /* Clean mirror via CSS only */
     }
 
     .loading {
@@ -184,13 +185,13 @@
   </div>
 
   <script>
-    // Precision Form-Fitting T-Shirt SVG
+    // Precision Form-Fitting T-Shirt SVG (Collar at top, Body at bottom)
     const createShirtSVG = (color, text) => {
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
-        <!-- Natural T-Shirt Body Outline -->
-        <path d="M 180 50 Q 250 95 320 50 L 450 115 L 395 200 L 350 165 L 355 460 L 145 460 L 150 165 L 105 200 L 50 115 Z" 
-              fill="${color}" stroke="#ffffff" stroke-width="5" stroke-linejoin="round"/>
-        <path d="M 180 50 Q 250 95 320 50 Q 250 75 180 50 Z" fill="#000000" opacity="0.3"/>
+        <!-- Natural Upright T-Shirt Silhouette -->
+        <path d="M 175 60 Q 250 110 325 60 L 460 120 L 400 210 L 355 175 L 360 480 L 140 480 L 145 175 L 100 210 L 40 120 Z" 
+              fill="${color}" stroke="#ffffff" stroke-width="6" stroke-linejoin="round"/>
+        <path d="M 175 60 Q 250 110 325 60 Q 250 85 175 60 Z" fill="#000000" opacity="0.3"/>
         <text x="250" y="240" font-size="28" font-family="Arial, sans-serif" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="2">${text}</text>
         <text x="250" y="270" font-size="13" font-family="Arial, sans-serif" font-weight="bold" fill="#ffffff" opacity="0.85" text-anchor="middle">BY UDARA</text>
       </svg>`;
@@ -251,9 +252,7 @@
       canvasCtx.save();
       canvasCtx.clearRect(0, 0, w, h);
       
-      // Mirror Canvas
-      canvasCtx.translate(w, 0);
-      canvasCtx.scale(-1, 1);
+      // Standard Camera Draw
       canvasCtx.drawImage(results.image, 0, 0, w, h);
 
       if (results.poseLandmarks) {
@@ -266,31 +265,29 @@
           const pLeft = { x: leftShoulder.x * w, y: leftShoulder.y * h };
           const pRight = { x: rightShoulder.x * w, y: rightShoulder.y * h };
 
-          // Center of the shoulders
+          // Center between shoulders
           const midX = (pLeft.x + pRight.x) / 2;
           const midY = (pLeft.y + pRight.y) / 2;
 
           const shoulderDistance = Math.hypot(pRight.x - pLeft.x, pRight.y - pLeft.y);
           
-          // Fixed angle for upright fitting on mirrored canvas
-          const angle = Math.atan2(pLeft.y - pRight.y, pLeft.x - pRight.x);
+          // Natural Shoulder Angle
+          const angle = Math.atan2(pRight.y - pLeft.y, pRight.x - pLeft.x);
 
-          // Dynamic Body Auto-Fit
+          // Proportional Auto-Fit
           const shirtWidth = shoulderDistance * 2.0;
-          
-          // Calculate height from shoulders to hips if hips are visible, else use standard ratio
-          let shirtHeight = shirtWidth * 1.0;
+          let shirtHeight = shirtWidth * 1.05;
+
           if (leftHip && rightHip && leftHip.visibility > 0.2 && rightHip.visibility > 0.2) {
             const hipMidY = ((leftHip.y + rightHip.y) / 2) * h;
-            const torsoHeight = Math.abs(hipMidY - midY);
-            shirtHeight = torsoHeight * 1.35;
+            shirtHeight = Math.max(shirtHeight, Math.abs(hipMidY - midY) * 1.25);
           }
 
           canvasCtx.save();
           canvasCtx.translate(midX, midY);
           canvasCtx.rotate(angle);
           
-          // Draw shirt starting from collar down through torso
+          // Draw shirt upright starting right on the collar line
           canvasCtx.drawImage(
             clothingImg, 
             -shirtWidth / 2, 
